@@ -1,0 +1,7 @@
+{
+    "name": "phaser_space_shooter",
+    "version": "1.0.0",
+    "dependencies": {
+        "phaser": "^3.70.0"
+    }
+}
