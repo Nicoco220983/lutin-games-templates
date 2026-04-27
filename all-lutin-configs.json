@@ -1,0 +1,13 @@
+{
+  "phaser_space_shooter": {
+    "name": "phaser_space_shooter",
+    "tags": [
+      "phaser",
+      "game",
+      "space",
+      "shooter",
+      "template"
+    ],
+    "description": "A simple space shooter game template built with Phaser 3"
+  }
+}
