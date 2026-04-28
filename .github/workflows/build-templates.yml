@@ -18,51 +18,51 @@ jobs:
           templates=$(ls -d templates/*/ | sed 's|templates/||' | sed 's|/$||')
           echo "list=$templates" >> $GITHUB_OUTPUT
           echo "count=$(echo $templates | wc -w)" >> $GITHUB_OUTPUT
+          echo "$templates" > template_list.txt
 
-      - name: Build and upload each template
-        run: |
-          for template in ${{ steps.templates.outputs.list }}; do
-            echo "Building $template"
-            cd templates/$template
-            tar -czf ../../$template.tar.gz .
-            cd ../..
-          done
-
-      - name: Upload artifact with ID output
+      - name: Upload template list
         uses: actions/upload-artifact@v4
         with:
-          name: template-artifacts
-          path: "*.tar.gz"
-          retention-days: 30
+          name: template-list
+          path: template_list.txt
+          retention-days: 1
 
-      - name: Create URL mapping
+  collect-artifact-info:
+    needs: [build-templates, build-matrix]
+    runs-on: ubuntu-latest
+    outputs:
+      mapping: ${{ steps.collect.outputs.mapping }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download template list
+        uses: actions/download-artifact@v4
+        with:
+          name: template-list
+          path: .
+
+      - name: Collect artifact IDs
+        id: collect
         run: |
           python3 <<EOF
           import json
-          import os
 
           owner = "${{ github.repository }}".split("/")[0]
           repo = "${{ github.repository }}".split("/")[1]
           run_id = "${{ github.run_id }}"
 
-          templates = [d for d in os.listdir('templates') if os.path.isdir(f'templates/{d}')]
+          with open('template_list.txt', 'r') as f:
+              templates = f.read().strip().split()
+
           mapping = {}
           for t in templates:
-              mapping[t] = f"https://github.com/{owner}/{repo}/actions/runs/{run_id}"
+              mapping[t] = f"https://github.com/{owner}/{repo}/actions/runs/{run_id}/artifacts/{t}-artifact"
 
-          with open('artifact_mapping.json', 'w') as f:
-              json.dump(mapping, f)
+          print(f"::set-output name=mapping::{json.dumps(mapping)}")
           EOF
 
-      - name: Upload mapping
-        uses: actions/upload-artifact@v4
-        with:
-          name: artifact-mapping
-          path: artifact_mapping.json
-          retention-days: 30
-
   update-config:
-    needs: build-templates
+    needs: [build-templates, collect-artifact-info]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -70,12 +70,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Download mapping
-        uses: actions/download-artifact@v4
-        with:
-          name: artifact-mapping
-          path: .
 
       - name: Update all-lutin-configs.json
         run: |
@@ -85,12 +79,11 @@ jobs:
           with open('all-lutin-configs.json', 'r') as f:
               config = json.load(f)
 
-          with open('artifact_mapping.json', 'r') as f:
-              mapping = json.load(f)
+          mapping = json.loads('${{ needs.collect-artifact-info.outputs.mapping }}')
 
-          for key, url in mapping.items():
-              if key in config:
-                  config[key]['download_url'] = f"{url}/#Artifacts"
+          for key in config:
+              if key in mapping:
+                  config[key]['download_url'] = mapping[key]
 
           with open('all-lutin-configs.json', 'w') as f:
               json.dump(config, f, indent=2)
