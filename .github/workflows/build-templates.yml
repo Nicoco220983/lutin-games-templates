@@ -1,0 +1,106 @@
+name: Build Templates
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-templates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get template list
+        id: templates
+        run: |
+          templates=$(ls -d templates/*/ | sed 's|templates/||' | sed 's|/$||')
+          echo "list=$templates" >> $GITHUB_OUTPUT
+          echo "count=$(echo $templates | wc -w)" >> $GITHUB_OUTPUT
+
+      - name: Build and upload each template
+        run: |
+          for template in ${{ steps.templates.outputs.list }}; do
+            echo "Building $template"
+            cd templates/$template
+            tar -czf ../../$template.tar.gz .
+            cd ../..
+          done
+
+      - name: Upload artifact with ID output
+        uses: actions/upload-artifact@v4
+        with:
+          name: template-artifacts
+          path: "*.tar.gz"
+          retention-days: 30
+
+      - name: Create URL mapping
+        run: |
+          python3 <<EOF
+          import json
+          import os
+
+          owner = "${{ github.repository }}".split("/")[0]
+          repo = "${{ github.repository }}".split("/")[1]
+          run_id = "${{ github.run_id }}"
+
+          templates = [d for d in os.listdir('templates') if os.path.isdir(f'templates/{d}')]
+          mapping = {}
+          for t in templates:
+              mapping[t] = f"https://github.com/{owner}/{repo}/actions/runs/{run_id}"
+
+          with open('artifact_mapping.json', 'w') as f:
+              json.dump(mapping, f)
+          EOF
+
+      - name: Upload mapping
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifact-mapping
+          path: artifact_mapping.json
+          retention-days: 30
+
+  update-config:
+    needs: build-templates
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download mapping
+        uses: actions/download-artifact@v4
+        with:
+          name: artifact-mapping
+          path: .
+
+      - name: Update all-lutin-configs.json
+        run: |
+          python3 <<EOF
+          import json
+
+          with open('all-lutin-configs.json', 'r') as f:
+              config = json.load(f)
+
+          with open('artifact_mapping.json', 'r') as f:
+              mapping = json.load(f)
+
+          for key, url in mapping.items():
+              if key in config:
+                  config[key]['download_url'] = f"{url}/#Artifacts"
+
+          with open('all-lutin-configs.json', 'w') as f:
+              json.dump(config, f, indent=2)
+          EOF
+
+      - name: Commit and push updated config
+        if: github.event_name == 'push'
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add all-lutin-configs.json
+          git diff --cached --quiet || git commit -m "Update download URLs in all-lutin-configs.json"
+          git push
