@@ -49,7 +49,13 @@ function getIndexHtml(mainJsPath) {
         body { margin: 0; padding: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; }
         canvas { display: block; }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
+    <script type="importmap">
+    {
+        "imports": {
+            "phaser": "https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.esm.min.js"
+        }
+    }
+    </script>
 </head>
 <body>
     <script type="module">
@@ -64,16 +70,10 @@ const server = http.createServer((req, res) => {
     let urlPath = req.url === '/' ? '/index.html' : req.url;
     let filePath = path.join(templateDir, urlPath);
 
-    if (urlPath === '/index.html' && !fs.existsSync(filePath)) {
+    if (urlPath === '/index.html') {
         const mainJsPath = '/src/main.js';
-        const mainJsFullPath = path.join(templateDir, mainJsPath);
-        if (fs.existsSync(mainJsFullPath)) {
-            res.writeHead(200, { 'Content-Type': 'text/html' });
-            res.end(getIndexHtml(mainJsPath));
-            return;
-        }
-        res.writeHead(404);
-        res.end('No index.html and no src/main.js found');
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end(getIndexHtml(mainJsPath));
         return;
     }
 

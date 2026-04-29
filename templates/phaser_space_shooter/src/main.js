@@ -1,9 +1,10 @@
+import { Game, AUTO } from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT, BACKGROUND_COLOR, PHYSICS_GRAVITY_Y, PHYSICS_DEBUG } from './GameConfig.js';
 import { BootScene } from './scenes/BootScene.js';
 import { PlayScene } from './scenes/PlayScene.js';
 
 const config = {
-  type: Phaser.AUTO,
+  type: AUTO,
   width: GAME_WIDTH,
   height: GAME_HEIGHT,
   backgroundColor: BACKGROUND_COLOR,
@@ -18,5 +19,5 @@ const config = {
 };
 
 export function createGame(parentElement) {
-  return new Phaser.Game({ ...config, parent: parentElement });
+  return new Game({ ...config, parent: parentElement });
 }

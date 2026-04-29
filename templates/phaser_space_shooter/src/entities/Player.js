@@ -1,8 +1,10 @@
+import { GameObjects } from 'phaser';
+
 export const PLAYER_SPEED = 300;
 export const PLAYER_FIRE_RATE = 200;
 export const PLAYER_BULLET_SPEED = 500;
 
-export class Player extends Phaser.GameObjects.Container {
+export class Player extends GameObjects.Container {
   constructor(scene, x, y) {
     super(scene, x, y);
     this.scene = scene;

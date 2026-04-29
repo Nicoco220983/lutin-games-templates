@@ -1,5 +1,3 @@
-import { GAME_WIDTH } from '../GameConfig.js';
-
 export class ScoreManager {
   constructor(scene) {
     this.scene = scene;

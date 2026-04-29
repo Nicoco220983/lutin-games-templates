@@ -1,3 +1,4 @@
+import { Scene } from 'phaser';
 import { GAME_WIDTH } from '../GameConfig.js';
 import { Player } from '../entities/Player.js';
 import { Enemy } from '../entities/Enemy.js';
@@ -5,7 +6,7 @@ import { Bullet } from '../entities/Bullet.js';
 import { EnemySpawner } from '../managers/EnemySpawner.js';
 import { ScoreManager } from '../managers/ScoreManager.js';
 
-export class PlayScene extends Phaser.Scene {
+export class PlayScene extends Scene {
   constructor() {
     super({ key: 'PlayScene' });
     this.player = null;

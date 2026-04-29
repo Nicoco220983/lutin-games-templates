@@ -1,6 +1,8 @@
+import { GameObjects } from 'phaser';
+
 export const BULLET_SPEED = 500;
 
-export class Bullet extends Phaser.GameObjects.Rectangle {
+export class Bullet extends GameObjects.Rectangle {
   constructor(scene, x, y) {
     super(scene, x, y, 4, 15, 0xffff00);
     this.scene = scene;

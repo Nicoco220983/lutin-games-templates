@@ -1,4 +1,6 @@
-export class BootScene extends Phaser.Scene {
+import { Scene } from 'phaser';
+
+export class BootScene extends Scene {
   constructor() {
     super({ key: 'BootScene' });
   }
